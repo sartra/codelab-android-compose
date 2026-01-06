@@ -16,6 +16,7 @@
 
 package com.example.compose.rally
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -48,19 +49,29 @@ import com.example.compose.rally.ui.theme.RallyTheme
  * https://material.io/design/material-studies/rally.html
  */
 class RallyActivity : ComponentActivity() {
+
+    private lateinit var navController: NavHostController
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            RallyApp()
+            navController = rememberNavController()
+            RallyApp(navController)
         }
+    }
+
+    // to open deeplink when app is already open
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // Pass the new intent to the NavHostController
+        navController.handleDeepLink(intent)
     }
 }
 
 @Composable
-fun RallyApp() {
+fun RallyApp(navController: NavHostController) {
     RallyTheme {
 //        var currentScreen: RallyDestination by remember { mutableStateOf(Overview) }
-        val navController = rememberNavController()
         // To get real time updates on your current destination from the back stack in a form of State
         val currentBackStack by navController.currentBackStackEntryAsState()
         // Fetch your currentDestination:
@@ -74,53 +85,16 @@ fun RallyApp() {
             topBar = {
                 RallyTabRow(
                     allScreens = rallyTabRowScreens,
-                    // Pass the callback like this,
-                    // defining the navigation action when a tab is selected:
-//                    onTabSelected = { newScreen ->
-//                        navController.navigate(newScreen.route)
-//                    },
                     onTabSelected = { newScreen ->
                         navController.navigateSingleTopTo(newScreen.route)
                     },
                     currentScreen = currentScreen,
                 )
             }) { innerPadding ->
-//            Box(Modifier.padding(innerPadding)) {
-//                currentScreen.screen()
-//            }
-            NavHost(
+            RallyNavHost(
                 navController = navController,
-                startDestination = Overview.route,
                 modifier = Modifier.padding(innerPadding)
-            ) {
-                // builder parameter will be defined here as the graph
-//                composable(route = Overview.route) {
-//                    Overview.screen()
-//                }
-                composable(route = Overview.route) {
-                    OverviewScreen(onClickSeeAllAccounts = {
-                        navController.navigateSingleTopTo(Accounts.route)
-                    }, onClickSeeAllBills = {
-                        navController.navigateSingleTopTo(Bills.route)
-                    }, onAccountClick = { accountType ->
-                        navController.navigateSingleTopTo("${SingleAccount.route}/$accountType")
-                    })
-                }
-                composable(route = Accounts.route) {
-                    AccountsScreen(
-                        onAccountClick = { accountType ->
-                            navController.navigateToSingleAccount(accountType)
-                        }
-                    )
-                }
-                composable(route = Bills.route) { BillsScreen() }
-                composable(
-                    route = "${SingleAccount.route}/{${SingleAccount.accountTypeArg}}",
-                    arguments = SingleAccount.arguments
-                ) {
-                    SingleAccountScreen()
-                }
-            }
+            )
         }
     }
 }
