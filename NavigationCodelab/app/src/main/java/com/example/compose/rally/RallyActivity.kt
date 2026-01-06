@@ -28,7 +28,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.example.compose.rally.ui.accounts.AccountsScreen
+import com.example.compose.rally.ui.accounts.SingleAccountScreen
+import com.example.compose.rally.ui.bills.BillsScreen
 import com.example.compose.rally.ui.components.RallyTabRow
+import com.example.compose.rally.ui.overview.OverviewScreen
 import com.example.compose.rally.ui.theme.RallyTheme
 
 /**
@@ -47,18 +59,67 @@ class RallyActivity : ComponentActivity() {
 @Composable
 fun RallyApp() {
     RallyTheme {
-        var currentScreen: RallyDestination by remember { mutableStateOf(Overview) }
+//        var currentScreen: RallyDestination by remember { mutableStateOf(Overview) }
+        val navController = rememberNavController()
+        // To get real time updates on your current destination from the back stack in a form of State
+        val currentBackStack by navController.currentBackStackEntryAsState()
+        // Fetch your currentDestination:
+        val currentDestination = currentBackStack?.destination
+
+        // Change the variable to this and use Overview as a backup screen if this returns null
+        val currentScreen =
+            rallyTabRowScreens.find { it.route == currentDestination?.route } ?: Accounts
+
         Scaffold(
             topBar = {
                 RallyTabRow(
                     allScreens = rallyTabRowScreens,
-                    onTabSelected = { screen -> currentScreen = screen },
-                    currentScreen = currentScreen
+                    // Pass the callback like this,
+                    // defining the navigation action when a tab is selected:
+//                    onTabSelected = { newScreen ->
+//                        navController.navigate(newScreen.route)
+//                    },
+                    onTabSelected = { newScreen ->
+                        navController.navigateSingleTopTo(newScreen.route)
+                    },
+                    currentScreen = currentScreen,
                 )
-            }
-        ) { innerPadding ->
-            Box(Modifier.padding(innerPadding)) {
-                currentScreen.screen()
+            }) { innerPadding ->
+//            Box(Modifier.padding(innerPadding)) {
+//                currentScreen.screen()
+//            }
+            NavHost(
+                navController = navController,
+                startDestination = Overview.route,
+                modifier = Modifier.padding(innerPadding)
+            ) {
+                // builder parameter will be defined here as the graph
+//                composable(route = Overview.route) {
+//                    Overview.screen()
+//                }
+                composable(route = Overview.route) {
+                    OverviewScreen(onClickSeeAllAccounts = {
+                        navController.navigateSingleTopTo(Accounts.route)
+                    }, onClickSeeAllBills = {
+                        navController.navigateSingleTopTo(Bills.route)
+                    }, onAccountClick = { accountType ->
+                        navController.navigateSingleTopTo("${SingleAccount.route}/$accountType")
+                    })
+                }
+                composable(route = Accounts.route) {
+                    AccountsScreen(
+                        onAccountClick = { accountType ->
+                            navController.navigateToSingleAccount(accountType)
+                        }
+                    )
+                }
+                composable(route = Bills.route) { BillsScreen() }
+                composable(
+                    route = "${SingleAccount.route}/{${SingleAccount.accountTypeArg}}",
+                    arguments = SingleAccount.arguments
+                ) {
+                    SingleAccountScreen()
+                }
             }
         }
     }

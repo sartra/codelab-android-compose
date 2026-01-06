@@ -66,8 +66,10 @@ fun RallyNavHost(
             arguments = SingleAccount.arguments,
             deepLinks = SingleAccount.deepLinks
         ) { navBackStackEntry ->
+            // Retrieve the passed argument
             val accountType =
                 navBackStackEntry.arguments?.getString(SingleAccount.accountTypeArg)
+
             SingleAccountScreen(accountType)
         }
     }
@@ -90,6 +92,6 @@ fun NavHostController.navigateSingleTopTo(route: String) =
         restoreState = true
     }
 
-private fun NavHostController.navigateToSingleAccount(accountType: String) {
+fun NavHostController.navigateToSingleAccount(accountType: String) {
     this.navigateSingleTopTo("${SingleAccount.route}/$accountType")
 }
